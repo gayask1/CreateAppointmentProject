@@ -1,0 +1,254 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <apex:page standardController="Lead" extensions="CreateAppointmentController" tabStyle="Account" sidebar="false" showHeader="false" action="\{!pageLoad\}">\
+ \
+\
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"/>\
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment.min.js"/>\
+<script src="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.3.1/fullcalendar.min.js"/>\
+<link href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.3.1/fullcalendar.min.css" rel="stylesheet" />\
+<link href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.3.1/fullcalendar.print.css" rel="stylesheet" media="print"  />    \
+\
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>\
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>\
+    \
+<script>\
+	//We need to wrap everything in a doc.ready function so that the code fires after the DOM is loaded\
+	$(document).ready(function() \{\
+	\'a0\'a0 \
+		//Call the fullCallendar method. You can replace the '#calendar' with the ID of the dom element where you want the calendar to go. \
+		$('#calendar').fullCalendar(\{\
+			defaultView: 'agendaWeek',\
+            header: \{\
+				left: 'prev,next today',\
+				center: 'title'\
+			\},\
+            minTime: '06:00:00',\
+			maxTime: '21:00:00',\
+            eventRender: function (event, element) \{// existing event\
+                    element.attr('href', 'javascript:void(0);');\
+                    element.click(function() \{\
+                        $("#startTime").html(moment(event.start).format('MMM Do h:mm A'));\
+                        $("#endTime").html(moment(event.end).format('MMM Do h:mm A'));\
+                        $("#eventInfo").html(event.description);\
+                        $("#eventLink").attr('href', event.url);\
+                        $("#eventContent").dialog(\{ modal: true, title: event.title, width:350\});\
+                    \});\
+                \},\
+            selectable: true,//code for event click\
+\
+    //When u select some space in the calendar to set the values to pop up do the following:\
+        select: function (start, end, allDay) \{\
+            //do something when space selected\
+            //Show 'add event' modal\
+       		var dt = new Date(start.format()); \
+            startdate = dt;\
+            var strdate = dt.getUTCMonth() + '/' + dt.getUTCDate() + '/' + dt.getUTCFullYear();\
+            var hours = dt.getUTCHours() - dt.getHours();\
+            var mins = dt.getUTCMinutes() - dt.getMinutes();            \
+            $('#eventSubject').val('Appointment');\
+            $('#eventDate').val(strdate);\
+            $('#eventOwner').val('\{!Lead.Owner.firstName\}');\
+            $('#eventLocation').val('\{!Lead.City\}');\
+            var totalhours = dt.getUTCHours()-hours;            \
+            var totalmins =dt.getUTCMinutes() - mins;     		\
+            if(totalmins < 0)\{\
+                totalhours = totalhours -1;\
+                totalmins = totalmins * -1;\
+            \}                        \
+            $('#eventStartHours').val(totalhours);\
+            $('#eventStartMins').val(totalmins);    \
+	     $('#createEventModal').modal('show');           \
+        \},\
+			events:\
+			[\
+			//At run time, this APEX Repeat will reneder the array elements for the events array\
+			<apex:repeat value="\{!events\}" var="e">\
+				\{\
+				title: "\{!e.title\}",\
+				start: '\{!e.startString\}',\
+				end: '\{!e.endString\}',\
+				url: '\{!e.url\}',\
+				allDay: \{!e.allDay\},\
+				className: '\{!e.className\}'\
+				\},\
+			</apex:repeat>\
+			]\
+		\});\
+        function Event()\{ //all variable to build json string                 \
+                  this.Subject = null; \
+                  this.OwnerId = null;\
+                  this.StartDateTime = null; \
+                 this.EndDateTime = null;\
+                 this.Location = null;\
+              \}	\
+        $('#submitButton').click(function()\{\
+                 // var dt = new Date(start.format());             \
+            	 var evt = new Event();\
+                 evt.Subject  = $('#eventSubject').val();\
+                 evt.OwnerId  = '\{!leadrecord.OwnerId\}';\
+                 \
+                 evt.StartDateTime = startdate;\
+            	 evt.EndDateTime = startdate;// since enddate will be changed to +1 \
+                 evt.Location = '\{!leadrecord.City\}';\
+                 var strevt = JSON.stringify(evt);\
+                 console.log(evt);\
+                 console.log(strevt);\
+                 Visualforce.remoting.Manager.invokeAction(\
+                     '\{!$RemoteAction.CreateAppointmentController.covertLead\}',\
+                     strevt,'\{!leadrecord.id\}',\
+                     function(result, event) \{\
+                         console.log(result);\
+                     \});\
+            $('#createEventModal').modal('hide'); // once save is done hiding the popup window          \
+               \});\
+	\});\
+</script>\
+    \
+    <style>\
+		#cal-options \{float:left;\}\
+		#cal-legend \{ float:right;\}\
+		#cal-legend ul \{margin:0;padding:0;list-style:none;\}\
+		#cal-legend ul li \{margin:0;padding:5px;float:left;\}\
+		#cal-legend ul li span \{display:block; height:16px; width:16px; margin-right:4px; float:left; border-radius:4px;\}\
+		#calendar \{margin-top:20px;\}\
+		#calendar a:hover \{color:#fff !important;\}\
+		\'a0\
+		.fc-event-inner \{padding:3px;\}\
+		.event-birthday \{background:#56458c;border-color:#56458c;\}\
+		.event-campaign \{background:#cc9933;border-color:#cc9933;\}\
+		.event-personal \{background:#1797c0;border-color:#1797c0;\}\
+	</style>\
+     \
+\
+    <apex:form style="background-color:powderblue;">\
+    	<apex:pageBlock title="Create New Appointment">\
+            <apex:pageBlockSection title="Customer Information" columns="3" collapsible="false">\
+            	<apex:pageblocksectionItem >\
+                	First Name: <apex:outputField value="\{!leadrecord.firstname\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                    Last Name: <apex:outputField value="\{!leadrecord.lastname\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                </apex:pageblocksectionItem>\
+                \
+            	<apex:pageblocksectionItem >\
+                	Street Address: <apex:outputField value="\{!leadrecord.Street\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                </apex:pageblocksectionItem>\
+                \
+                <apex:pageblocksectionItem >\
+                	City: <apex:outputField value="\{!leadrecord.Street\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                    State:  <apex:outputField value="\{!leadrecord.State\}"/>\
+                </apex:pageblocksectionItem>\
+                 <apex:pageblocksectionItem >    \
+                    ZipCode: <apex:outputField value="\{!leadrecord.postalcode\}"/>\
+                </apex:pageblocksectionItem>\
+            </apex:pageBlockSection>\
+            <apex:pageBlockSection title="Lead Owner" columns="2" collapsible="false">\
+            	<apex:pageblocksectionItem >\
+                	First Name: <apex:outputField value="\{!leadrecord.Owner.firstname\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >    \
+                    Last Name: <apex:outputField value="\{!leadrecord.Owner.lastname\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >\
+                	Phone Number: <apex:outputField value="\{!leadrecord.Owner.phone\}"/>\
+                </apex:pageblocksectionItem>\
+                <apex:pageblocksectionItem >\
+                	Email: <apex:outputField value="\{!leadrecord.Owner.email\}"/>\
+                </apex:pageblocksectionItem>\
+               \
+            </apex:pageBlockSection>\
+            <apex:pageBlocksection title="Estimator Calendar" collapsible="false" columns="1">\
+            		\
+				<div id="calendar"></div>\
+            \
+            </apex:pageBlocksection>\
+            \
+        </apex:pageBlock>\
+    \
+    </apex:form>\
+    \
+\
+    <!--Add event modal Pop Up Window-->\
+<div id="createEventModal" class="modal fade">\
+    <div class="modal-dialog">\
+        <div class="modal-content">\
+            <div class="modal-header">\
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span> <span class="sr-only">close</span></button>\
+                <h4>Add an Event</h4>\
+            </div>\
+            <div id="modalBody" class="modal-body">\
+               <div class="form-group">\
+                  Event Subject : <input class="form-control" type="text" placeholder="Event Subject" id="eventSubject"/>\
+                </div>				\
+                <div class="form-group">\
+                 Event Owner : <output type="label" placeholder="Event Owner" id="eventOwner"/>\
+                </div>\
+                <div class="form-group">\
+                 Location : <output type="label" placeholder="Event Location" id="eventLocation"/>\
+                </div>\
+                <div class="form-group">\
+                  Event Date : <output type="label" placeholder="Event Date" id="eventDate"/>\
+                </div>\
+                <div class="form-group">\
+                 Event Start Time : <select id="eventStartHours">\
+                    <option value="0">00</option>\
+                    <option value="1">01</option>\
+                    <option value="2">02</option>\
+                    <option value="3">03</option>\
+                    <option value="4">04</option>\
+                    <option value="5">05</option>\
+                    <option value="6">06</option>\
+                    <option value="7">07</option>\
+                    <option value="8">08</option>\
+                    <option value="9">09</option>\
+                    <option value="10">10</option>\
+                    <option value="11">11</option>\
+                    <option value="12">12</option>\
+                    <option value="13">13</option>\
+                    <option value="14">14</option>\
+                    <option value="15">15</option>\
+                    <option value="16">16</option>\
+                    <option value="17">17</option>\
+                    <option value="18">18</option>\
+                    <option value="19">19</option>\
+                    <option value="20">20</option>\
+                    <option value="21">21</option>\
+                    <option value="22">22</option>\
+                    <option value="23">23</option>                  \
+                    </select> : \
+                    <select id="eventStartMins">\
+                    <option value="0">00</option>\
+                    <option value="30">30</option>                    \
+                    </select>\
+                </div>\
+                <div class="form-group">\
+                 Show Time As : <select id="eventShowTime">\
+                    <option value="Busy">Busy</option>\
+                    <option value="Out of Office">Out of Office</option>\
+                    <option value="Free">Free</option>\
+                    </select>\
+\
+                </div>\
+            </div>\
+            <div class="modal-footer">\
+                <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>\
+                <button type="submit" class="btn btn-primary" id="submitButton">Save Appointment</button>\
+            </div>\
+        </div>\
+    </div>\
+</div>\
+\
+</apex:page>}
